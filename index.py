@@ -16,9 +16,31 @@ def init_curses():
     return stdscr
 
 
+def clean_exit():
+    # Ende
+    curses.nocbreak()
+    stdscr.keypad(0)
+    curses.echo()
+    curses.endwin()
+
+
 def refresh_windows():
     for win in windows:
         win.refresh()
+
+
+def display_array(window, array):
+    window.clear()
+    maxy, maxx = window.getmaxyx()
+
+    if len(array) <= maxy:
+        for line in range(len(array)):
+            window.addstr(array[line])
+    else:
+        first_element = len(array) - maxy
+        for line in range(maxy):
+            window.addstr(array[first_element])
+            first_element += 1
 
 
 # Init
@@ -36,6 +58,7 @@ windows.append(display_border_win)
 # Darstellungsfenster Inhalt
 display_win = curses.newwin(maxy - 5, maxx - 2, 1, 1)
 display_win.bkgd(curses.color_pair(1))
+display_win.scrollok(True)
 windows.append(display_win)
 
 # Edit-Fenster Rand
@@ -54,19 +77,22 @@ windows.append(input_win)
 textbox = curses.textpad.Textbox(input_win)
 
 refresh_windows()
-i = 0
-while True:
-    text = textbox.edit()
+messages = []
 
-    # Text übernehmen
-    display_win.addstr(i, 0, '[USER] ' + text + '\n')
-    i += 1
+try:
+    while True:
+        user_input = textbox.edit()
 
-    input_win.clear()
-    refresh_windows()
+        if user_input.strip() == '':
+            continue
 
-# Ende
-curses.nocbreak()
-stdscr.keypad(0)
-curses.echo()
-curses.endwin()
+        messages.append('[USER] ' + user_input + '\n')
+
+        display_array(display_win, messages)
+
+        input_win.clear()
+        refresh_windows()
+
+except KeyboardInterrupt:
+    clean_exit()
+    
